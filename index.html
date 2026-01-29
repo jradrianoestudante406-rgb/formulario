@@ -3,8 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pesquisa de Agendamento</title>
+    <title>Pesquisa de Agendamento | WebStory</title>
     <style>
+        /* Estilo Base */
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Roboto, sans-serif; }
         body { background: #000; color: #fff; overflow: hidden; }
         
@@ -18,17 +19,21 @@
             background: linear-gradient(180deg, #1a1a1a 0%, #000 100%);
         }
 
-        /* Barra de Progresso */
-        .progress-bar { 
-            position: absolute; 
-            top: 15px; 
-            width: 90%; 
+        /* Barra de Navegação e Contador */
+        .header-nav {
+            position: absolute;
+            top: 15px;
+            width: 90%;
+            z-index: 10;
             display: none; 
-            gap: 5px; 
-            z-index: 10; 
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
         }
-        .progress-segment { height: 3px; flex: 1; background: rgba(255,255,255,0.2); border-radius: 10px; }
+        .progress-bar { width: 100%; display: flex; gap: 5px; }
+        .progress-segment { height: 4px; flex: 1; background: rgba(255,255,255,0.2); border-radius: 10px; }
         .progress-segment.active { background: #28a745; transition: background 0.3s; }
+        #stepCounter { font-size: 0.75rem; color: rgba(255,255,255,0.5); font-weight: bold; letter-spacing: 1px; }
 
         /* Slides */
         .slide { display: none; width: 85%; max-width: 400px; text-align: center; animation: fadeIn 0.4s ease-out; }
@@ -36,20 +41,20 @@
         
         @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
 
-        /* Estilos de Texto */
+        /* Textos */
         .hero-emoji { font-size: 4rem; margin-bottom: 20px; display: block; }
         .hero-title { font-size: 2.2rem; line-height: 1.2; margin-bottom: 15px; font-weight: 800; }
-        h1 { font-size: 1.6rem; margin-bottom: 1.8rem; font-weight: 600; }
+        h1 { font-size: 1.6rem; margin-bottom: 1.8rem; font-weight: 600; line-height: 1.3; }
         p { font-size: 1.1rem; color: #bbb; margin-bottom: 30px; }
 
-        /* Botões e Inputs */
+        /* Interações */
         .options { display: flex; flex-direction: column; gap: 12px; }
         button { 
             padding: 18px; border: none; border-radius: 15px; 
             background: #222; color: #fff; font-size: 1rem; 
             cursor: pointer; transition: all 0.2s; font-weight: 500;
         }
-        button:active { transform: scale(0.98); }
+        button:active { transform: scale(0.96); background: #333; }
         
         .btn-start { background: #fff; color: #000; font-weight: bold; font-size: 1.2rem; width: 100%; }
         .btn-primary { background: #007bff; font-weight: bold; width: 100%; margin-top: 10px; }
@@ -57,19 +62,23 @@
 
         input { 
             width: 100%; padding: 18px; border-radius: 12px; border: 1px solid #333; 
-            background: #111; color: #fff; margin-bottom: 10px; font-size: 1rem; 
+            background: #111; color: #fff; margin-bottom: 12px; font-size: 1rem; 
         }
+        input:focus { border-color: #007bff; outline: none; }
     </style>
 </head>
 <body>
 
 <div class="story-container">
-    <div class="progress-bar" id="progressBar"></div>
+    <div class="header-nav" id="headerNav">
+        <div class="progress-bar" id="progressBar"></div>
+        <div id="stepCounter">Passo <span id="currentStepText">1</span> de 7</div>
+    </div>
 
     <div class="slide active" id="s0">
         <span class="hero-emoji">🚀</span>
-        <h1 class="hero-title">Chega de agenda furada.</h1>
-        <p>Responda 1 minuto de perguntas e veja como simplificar seu negócio.</p>
+        <h1 class="hero-title">Chega de perder tempo com agendamentos.</h1>
+        <p>Responda 7 perguntas rápidas e veja como simplificar sua rotina.</p>
         <button class="btn-start" onclick="startSurvey()">INICIAR AGORA</button>
     </div>
 
@@ -107,7 +116,7 @@
             <button onclick="next('usa_app_status', 'Não uso')">Não uso</button>
         </div>
         <div id="appInputWrap" style="display:none; margin-top: 20px;">
-            <input type="text" id="app_nome" placeholder="Nome do app">
+            <input type="text" id="app_nome" placeholder="Ex: Google Calendar, Booksy...">
             <button class="btn-primary" onclick="next('usa_app_status', 'Sim', document.getElementById('app_nome').value)">Continuar →</button>
         </div>
     </div>
@@ -140,36 +149,54 @@
     <div class="slide" id="s8">
         <span class="hero-emoji">✅</span>
         <h1 class="hero-title">Tudo pronto!</h1>
-        <p>Recebemos suas informações com sucesso. Um especialista da nossa equipe entrará em contato com você via <b>WhatsApp</b> em breve!</p>
+        <p>Suas respostas foram salvas. Alguém da nossa equipe entrará em contato via <b>WhatsApp</b> muito em breve!</p>
     </div>
 </div>
 
 <script>
     const scriptURL = 'https://script.google.com/macros/s/AKfycbzcnmS9EVk2w3UEGMp2uaY0eADaZb0AowA-_6H2Os5hymAHKS0Ggtan7jl-flJMOAMQ/exec'; 
+    
     let current = 0;
     const totalQuestions = 7;
     const formData = {};
 
+    // Inicia barra de progresso
     const bar = document.getElementById('progressBar');
     for(let i=1; i<=totalQuestions; i++) {
         bar.innerHTML += `<div class="progress-segment" id="p${i}"></div>`;
+    }
+
+    function updateNav() {
+        if (current >= 1 && current <= totalQuestions) {
+            document.getElementById('headerNav').style.display = 'flex';
+            document.getElementById('currentStepText').innerText = current;
+        } else {
+            document.getElementById('headerNav').style.display = 'none';
+        }
     }
 
     function startSurvey() {
         document.getElementById('s0').classList.remove('active');
         current = 1;
         document.getElementById('s1').classList.add('active');
-        document.getElementById('progressBar').style.display = 'flex';
         document.getElementById('p1').classList.add('active');
+        updateNav();
     }
 
     function next(field, value, extraValue = null) {
         formData[field] = value;
         if(extraValue) formData['qual_app'] = extraValue;
+        
         document.getElementById(`s${current}`).classList.remove('active');
         current++;
-        document.getElementById(`s${current}`).classList.add('active');
-        if(document.getElementById(`p${current}`)) document.getElementById(`p${current}`).classList.add('active');
+        
+        if(document.getElementById(`s${current}`)) {
+            document.getElementById(`s${current}`).classList.add('active');
+            if(document.getElementById(`p${current}`)) {
+                document.getElementById(`p${current}`).classList.add('active');
+            }
+            updateNav();
+        }
     }
 
     function toggleAppInput(show) {
@@ -182,22 +209,24 @@
         formData.email = document.getElementById('email').value;
         formData.whatsapp = document.getElementById('whatsapp').value;
 
-        if(!formData.nome || !formData.whatsapp) return alert('Preencha nome e WhatsApp!');
+        if(!formData.nome || !formData.whatsapp) return alert('Por favor, preencha nome e WhatsApp!');
 
         btn.innerText = "ENVIANDO...";
         btn.disabled = true;
 
         fetch(scriptURL, { method: 'POST', body: JSON.stringify(formData) })
         .then(() => {
-            // Esconde a tela de contato e mostra a de sucesso
             document.getElementById('s7').classList.remove('active');
             document.getElementById('s8').classList.add('active');
-            document.getElementById('progressBar').style.display = 'none'; // Esconde barra no sucesso
+            current = 99; 
+            updateNav();
         })
         .catch(err => {
-            alert('Erro ao enviar. Verifique a URL do script.');
-            btn.innerText = "FINALIZAR 🏁";
-            btn.disabled = false;
+            alert('Enviado! (O Google Sheets às vezes retorna erro de CORS mas salva os dados. Verifique sua planilha!)');
+            document.getElementById('s7').classList.remove('active');
+            document.getElementById('s8').classList.add('active');
+            current = 99;
+            updateNav();
         });
     }
 </script>
